@@ -1,0 +1,41 @@
+# 代码所有者配置
+# 指定谁负责审核特定目录/文件的代码
+
+# 默认所有者（所有未匹配的文件）
+* @SmileOcc
+
+# 页面组件 - 需要主要开发者审核
+/lib/pages/ @SmileOcc
+
+# 核心组件
+/lib/core/ @SmileOcc
+
+# 数据层
+/lib/data/ @SmileOcc
+
+# 状态管理
+/lib/providers/ @SmileOcc
+
+# UI 组件
+/lib/widgets/ @SmileOcc
+
+# 首页相关
+/lib/pages/home/ @SmileOcc
+
+# 分类页
+/lib/pages/category/ @SmileOcc
+
+# 社区页
+/lib/pages/community/ @SmileOcc
+
+# 购物车页
+/lib/pages/cart/ @SmileOcc
+
+# 个人中心页
+/lib/pages/profile/ @SmileOcc
+
+# 国际化配置
+/lib/core/l10n/ @SmileOcc
+
+# GitHub Actions 配置
+/.github/ @SmileOcc
