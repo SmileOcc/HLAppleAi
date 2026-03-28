@@ -58,18 +58,19 @@ class _RichTextEditorState extends State<RichTextEditor> {
   void _loadInitialContent() {
     try {
       final doc = Document.fromJson(_parseJson(widget.initialContent!));
-      _controller = QuillController(
-        document: doc,
-        selection: const TextSelection.collapsed(offset: 0),
+      _controller.document = doc;
+      _controller.updateSelection(
+        const TextSelection.collapsed(offset: 0),
+        ChangeSource.local,
       );
     } catch (e) {
       final doc = Document()..insert(0, widget.initialContent!);
-      _controller = QuillController(
-        document: doc,
-        selection: const TextSelection.collapsed(offset: 0),
+      _controller.document = doc;
+      _controller.updateSelection(
+        const TextSelection.collapsed(offset: 0),
+        ChangeSource.local,
       );
     }
-    _controller.addListener(_onContentChanged);
   }
 
   List<dynamic> _parseJson(String jsonStr) {
