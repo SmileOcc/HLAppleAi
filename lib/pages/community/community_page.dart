@@ -4,6 +4,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/l10n/app_localizations.dart';
 import '../../providers/home_provider.dart';
 import '../../widgets/post_card.dart';
+import 'create_post_page.dart';
 import 'post_detail_page.dart';
 
 class CommunityPage extends StatefulWidget {
@@ -74,6 +75,43 @@ class _CommunityPageState extends State<CommunityPage>
       body: TabBarView(
         controller: _tabController,
         children: tabs.map((tab) => _buildPostList()).toList(),
+      ),
+      floatingActionButton: _buildFAB(),
+    );
+  }
+
+  Widget _buildFAB() {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppColors.primary,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(28),
+          onTap: () => _showCreatePostSheet(),
+          child: const Icon(Icons.add, color: Colors.white, size: 32),
+        ),
+      ),
+    );
+  }
+
+  void _showCreatePostSheet() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const CreatePostPage(),
+        fullscreenDialog: true,
       ),
     );
   }
