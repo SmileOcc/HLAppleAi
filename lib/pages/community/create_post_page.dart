@@ -1,12 +1,16 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/utils/toast_util.dart';
 import '../../data/models/product.dart';
 import '../../data/services/mock_product_service.dart';
+import '../../data/services/mock_rich_text_service.dart';
 import '../../widgets/custom_image_picker.dart';
+import '../../widgets/rich_text_editor.dart';
 
 class CreatePostPage extends StatefulWidget {
   final int maxImages;
@@ -18,7 +22,7 @@ class CreatePostPage extends StatefulWidget {
 }
 
 class _CreatePostPageState extends State<CreatePostPage> {
-  final TextEditingController _contentController = TextEditingController();
+  late QuillController _quillController;
   final List<String> _selectedImages = [];
   String? _selectedCategory;
   Product? _selectedProduct;
@@ -28,6 +32,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
   static const int _maxTopics = 5;
   String? _selectedLocation;
   final ImagePicker _imagePicker = ImagePicker();
+  bool _isPublishing = false;
 
   int get _maxImages => widget.maxImages;
   int get _remainingSlots => _maxImages - _selectedImages.length;
@@ -65,6 +70,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
   @override
   void initState() {
     super.initState();
+    _quillController = QuillController.basic();
     _loadProducts();
   }
 
@@ -81,8 +87,16 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
   @override
   void dispose() {
-    _contentController.dispose();
+    _quillController.dispose();
     super.dispose();
+  }
+
+  String _getPlainText() {
+    return _quillController.document.toPlainText();
+  }
+
+  String _getDeltaJson() {
+    return jsonEncode(_quillController.document.toDelta().toJson());
   }
 
   @override
@@ -115,19 +129,39 @@ class _CreatePostPageState extends State<CreatePostPage> {
           ),
           Container(
             margin: const EdgeInsets.only(right: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              '发布',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            child: _isPublishing
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                  )
+                : GestureDetector(
+                    onTap: _publishPost,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        '发布',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
           ),
         ],
       ),
@@ -355,29 +389,57 @@ class _CreatePostPageState extends State<CreatePostPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '分享内容',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
+          Row(
+            children: [
+              const Text(
+                '分享内容',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: _showInsertProductDialog,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(
+                        Icons.add_circle_outline,
+                        size: 16,
+                        color: AppColors.primary,
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        '插入商品卡片',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: _contentController,
-            maxLines: 8,
+          RichTextEditor(
+            controller: _quillController,
             maxLength: 2000,
-            decoration: InputDecoration(
-              hintText: '说点什么...',
-              hintStyle: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 15,
-              ),
-              border: InputBorder.none,
-              filled: true,
-              fillColor: AppColors.background,
-            ),
+            hintText: '说点什么...',
+            minHeight: 150,
+            maxHeight: 250,
           ),
         ],
       ),
@@ -601,7 +663,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
       context,
       MaterialPageRoute(
         builder: (context) => _PostPreviewPage(
-          content: _contentController.text,
+          content: _getPlainText(),
+          deltaJson: _getDeltaJson(),
           images: List.from(_selectedImages),
           category: _selectedCategory,
           product: _selectedProduct,
@@ -1189,7 +1252,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
   }
 
   void _showDiscardDialog() {
-    if (_contentController.text.isEmpty &&
+    if (_getPlainText().isEmpty &&
         _selectedImages.isEmpty &&
         _selectedProduct == null) {
       Navigator.pop(context);
@@ -1216,6 +1279,96 @@ class _CreatePostPageState extends State<CreatePostPage> {
         ],
       ),
     );
+  }
+
+  void _showInsertProductDialog() {
+    if (_selectedProduct == null) {
+      _showProductPicker();
+    } else {
+      _insertProductCard(_selectedProduct!);
+    }
+  }
+
+  void _insertProductCard(Product product) {
+    final index = _quillController.selection.baseOffset;
+    final productCard =
+        '\n【商品】${product.name} - ¥${product.price.toStringAsFixed(2)}\n';
+
+    _quillController.document.insert(index, productCard);
+    _quillController.updateSelection(
+      TextSelection.collapsed(offset: index + productCard.length),
+      ChangeSource.local,
+    );
+
+    ToastUtil.show(context, '已插入商品卡片');
+  }
+
+  Future<void> _publishPost() async {
+    if (_getPlainText().trim().isEmpty) {
+      ToastUtil.show(context, '请输入内容');
+      return;
+    }
+
+    if (_selectedCategory == null) {
+      ToastUtil.show(context, '请选择话题分类');
+      return;
+    }
+
+    setState(() {
+      _isPublishing = true;
+    });
+
+    try {
+      final service = MockRichTextService();
+      await service.createPost(
+        content: _getPlainText(),
+        deltaJson: _getDeltaJson(),
+        images: _selectedImages,
+        category: _selectedCategory,
+        topics: _selectedTopics,
+        location: _selectedLocation,
+        linkedProductId: _selectedProduct?.id.toString(),
+      );
+
+      if (mounted) {
+        ToastUtil.show(context, '发布成功');
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ToastUtil.show(context, '发布失败: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPublishing = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _saveDraft() async {
+    try {
+      final service = MockRichTextService();
+      await service.saveDraft(
+        content: _getPlainText(),
+        deltaJson: _getDeltaJson(),
+        images: _selectedImages,
+        category: _selectedCategory,
+        topics: _selectedTopics,
+        location: _selectedLocation,
+        linkedProductId: _selectedProduct?.id.toString(),
+      );
+
+      if (mounted) {
+        ToastUtil.show(context, '草稿保存成功');
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ToastUtil.show(context, '保存失败: $e');
+      }
+    }
   }
 }
 
@@ -1371,6 +1524,7 @@ class _PreviewImageItem extends StatelessWidget {
 
 class _PostPreviewPage extends StatelessWidget {
   final String content;
+  final String? deltaJson;
   final List<String> images;
   final String? category;
   final Product? product;
@@ -1379,6 +1533,7 @@ class _PostPreviewPage extends StatelessWidget {
 
   const _PostPreviewPage({
     required this.content,
+    this.deltaJson,
     required this.images,
     this.category,
     this.product,
