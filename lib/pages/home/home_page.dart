@@ -6,6 +6,7 @@ import '../../core/l10n/app_localizations.dart';
 import '../../providers/home_provider.dart';
 import '../../widgets/product_card.dart';
 import 'product_detail_page.dart';
+import 'search_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -85,7 +86,12 @@ class _HomePageState extends State<HomePage> {
         padding: const EdgeInsets.all(AppConstants.paddingMedium),
         color: AppColors.primary,
         child: GestureDetector(
-          onTap: () {},
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SearchPage()),
+            );
+          },
           child: Container(
             height: 40,
             decoration: BoxDecoration(
