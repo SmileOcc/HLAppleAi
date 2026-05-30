@@ -8,12 +8,13 @@ import '../../data/models/product.dart';
 import '../../data/services/mock_product_service.dart';
 import '../../providers/cart_provider.dart';
 import '../../widgets/bottom_icon_with_badge.dart';
+import '../../widgets/image_viewer_page.dart';
 import '../../widgets/product_attribute_sheet.dart';
 import '../../widgets/share/share_dialog.dart';
 import '../cart/cart_page.dart';
 import '../checkout/checkout_page.dart';
+import 'review_list_page.dart';
 import '../community/post_detail_page.dart';
-import 'product_image_viewer_page.dart';
 
 class ProductDetailPage extends StatefulWidget {
   final Product product;
@@ -55,6 +56,13 @@ class _ProductDetailPageState extends State<ProductDetailPage>
       'images': [
         'https://picsum.photos/200/200?random=10',
         'https://picsum.photos/200/200?random=11',
+        'https://picsum.photos/200/200?random=12',
+        'https://picsum.photos/200/200?random=13',
+        'https://picsum.photos/200/200?random=14',
+        'https://picsum.photos/200/200?random=15',
+        'https://picsum.photos/200/200?random=16',
+        'https://picsum.photos/200/200?random=17',
+        'https://picsum.photos/200/200?random=18',
       ],
       'time': '2024-01-15',
     },
@@ -63,7 +71,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
       'avatar': 'https://picsum.photos/100/100?random=2',
       'rating': 4.5,
       'content': '性价比很高，推荐购买！',
-      'images': [],
+      'images': ['https://picsum.photos/200/200?random=20'],
       'time': '2024-01-14',
     },
     {
@@ -71,7 +79,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
       'avatar': 'https://picsum.photos/100/100?random=3',
       'rating': 4.0,
       'content': '整体不错，就是包装有点简陋。',
-      'images': ['https://picsum.photos/200/200?random=12'],
+      'images': [],
       'time': '2024-01-13',
     },
   ];
@@ -249,7 +257,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => ProductImageViewerPage(
+                        builder: (_) => ImageViewerPage(
                           imageUrls: _getImageUrls(),
                           initialIndex: index,
                         ),
@@ -567,6 +575,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
   }
 
   Widget _buildReviewSection() {
+    final displayReviews = _reviews.take(3).toList();
     return Container(
       margin: const EdgeInsets.only(top: 8),
       color: AppColors.white,
@@ -586,23 +595,42 @@ class _ProductDetailPageState extends State<ProductDetailPage>
                     color: AppColors.textPrimary,
                   ),
                 ),
-                Text(
-                  '查看全部 >',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ReviewListPage(
+                          product: widget.product,
+                          reviews: _reviews,
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    '查看全部 >',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          ..._reviews.map((review) => _buildReviewItem(review)),
+          ...displayReviews.asMap().entries.map((entry) {
+            final isLast = entry.key == displayReviews.length - 1;
+            return _buildReviewItem(entry.value, showDivider: !isLast);
+          }),
         ],
       ),
     );
   }
 
-  Widget _buildReviewItem(Map<String, dynamic> review) {
+  Widget _buildReviewItem(
+    Map<String, dynamic> review, {
+    bool showDivider = true,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
@@ -648,30 +676,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
           ),
           if (review['images'].isNotEmpty) ...[
             const SizedBox(height: 8),
-            SizedBox(
-              height: 80,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: review['images'].length,
-                itemBuilder: (context, index) {
-                  return Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: CachedNetworkImage(
-                        imageUrl: review['images'][index],
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
+            _buildReviewImageGrid(review['images'] as List<String>),
           ],
           const SizedBox(height: 4),
           Text(
@@ -681,9 +686,56 @@ class _ProductDetailPageState extends State<ProductDetailPage>
               color: AppColors.textSecondary,
             ),
           ),
-          const Divider(height: 24),
+          if (showDivider) const Divider(height: 24, color: AppColors.divider),
         ],
       ),
+    );
+  }
+
+  Widget _buildReviewImageGrid(List<String> images) {
+    final displayImages = images.take(9).toList();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final spacing = 4.0;
+        final itemWidth = (constraints.maxWidth - spacing * 2) / 3;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: displayImages.map((url) {
+            return SizedBox(
+              width: itemWidth,
+              height: itemWidth,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ImageViewerPage(
+                        imageUrls: displayImages,
+                        initialIndex: displayImages.indexOf(url),
+                      ),
+                    ),
+                  );
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: CachedNetworkImage(
+                    imageUrl: url,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    errorWidget: (context, url, error) => const Icon(
+                      Icons.broken_image,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        );
+      },
     );
   }
 

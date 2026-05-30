@@ -4,23 +4,23 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
-import '../../core/utils/toast_util.dart';
+import '../core/utils/toast_util.dart';
 
-class ProductImageViewerPage extends StatefulWidget {
+class ImageViewerPage extends StatefulWidget {
   final List<String> imageUrls;
   final int initialIndex;
 
-  const ProductImageViewerPage({
+  const ImageViewerPage({
     super.key,
     required this.imageUrls,
     this.initialIndex = 0,
   });
 
   @override
-  State<ProductImageViewerPage> createState() => _ProductImageViewerPageState();
+  State<ImageViewerPage> createState() => _ImageViewerPageState();
 }
 
-class _ProductImageViewerPageState extends State<ProductImageViewerPage> {
+class _ImageViewerPageState extends State<ImageViewerPage> {
   late PageController _pageController;
   late int _currentIndex;
   bool _isDownloading = false;
@@ -69,7 +69,7 @@ class _ProductImageViewerPageState extends State<ProductImageViewerPage> {
 
       await PhotoManager.editor.saveImageWithPath(
         file.path,
-        title: 'product_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        title: 'image_${DateTime.now().millisecondsSinceEpoch}.jpg',
       );
 
       await file.delete();
@@ -132,6 +132,7 @@ class _ProductImageViewerPageState extends State<ProductImageViewerPage> {
           PageView.builder(
             controller: _pageController,
             itemCount: widget.imageUrls.length,
+            clipBehavior: Clip.none,
             onPageChanged: (index) {
               setState(() => _currentIndex = index);
             },
@@ -139,9 +140,34 @@ class _ProductImageViewerPageState extends State<ProductImageViewerPage> {
               return _ImageItem(
                 imageUrl: widget.imageUrls[index],
                 onLongPress: () => _showDownloadDialog(widget.imageUrls[index]),
-                onSaveTap: () => _downloadImage(widget.imageUrls[index]),
               );
             },
+          ),
+          Positioned(
+            right: 24,
+            bottom: MediaQuery.of(context).padding.bottom + 24,
+            child: GestureDetector(
+              onTap: () => _downloadImage(widget.imageUrls[_currentIndex]),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.4),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.download_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+            ),
           ),
           if (_isDownloading)
             const Center(child: CircularProgressIndicator(color: Colors.white)),
@@ -154,13 +180,8 @@ class _ProductImageViewerPageState extends State<ProductImageViewerPage> {
 class _ImageItem extends StatefulWidget {
   final String imageUrl;
   final VoidCallback onLongPress;
-  final VoidCallback onSaveTap;
 
-  const _ImageItem({
-    required this.imageUrl,
-    required this.onLongPress,
-    required this.onSaveTap,
-  });
+  const _ImageItem({required this.imageUrl, required this.onLongPress});
 
   @override
   State<_ImageItem> createState() => _ImageItemState();
@@ -169,68 +190,34 @@ class _ImageItem extends StatefulWidget {
 class _ImageItemState extends State<_ImageItem> {
   final TransformationController _transformationController =
       TransformationController();
-  bool _isShowingSaveButton = true;
+  bool _showControls = true;
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Center(
-          child: GestureDetector(
-            onTap: () {
-              setState(() {
-                _isShowingSaveButton = !_isShowingSaveButton;
-              });
-            },
-            onLongPress: widget.onLongPress,
-            child: InteractiveViewer(
-              transformationController: _transformationController,
-              minScale: 0.5,
-              maxScale: 4.0,
-              boundaryMargin: const EdgeInsets.all(double.infinity),
-              child: CachedNetworkImage(
-                imageUrl: widget.imageUrl,
-                fit: BoxFit.contain,
-                placeholder: (context, url) => const Center(
-                  child: CircularProgressIndicator(color: Colors.white),
-                ),
-                errorWidget: (context, url, error) => const Icon(
-                  Icons.broken_image,
-                  color: Colors.white54,
-                  size: 64,
-                ),
-              ),
-            ),
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _showControls = !_showControls;
+        });
+      },
+      onLongPress: widget.onLongPress,
+      behavior: HitTestBehavior.translucent,
+      child: InteractiveViewer(
+        transformationController: _transformationController,
+        minScale: 0.5,
+        maxScale: 4.0,
+        boundaryMargin: const EdgeInsets.all(double.infinity),
+        clipBehavior: Clip.none,
+        child: CachedNetworkImage(
+          imageUrl: widget.imageUrl,
+          fit: BoxFit.contain,
+          placeholder: (context, url) => const Center(
+            child: CircularProgressIndicator(color: Colors.white),
           ),
+          errorWidget: (context, url, error) =>
+              const Icon(Icons.broken_image, color: Colors.white54, size: 64),
         ),
-        if (_isShowingSaveButton)
-          Positioned(
-            right: 24,
-            bottom: 24,
-            child: GestureDetector(
-              onTap: widget.onSaveTap,
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.download_rounded,
-                  color: Colors.black,
-                  size: 28,
-                ),
-              ),
-            ),
-          ),
-      ],
+      ),
     );
   }
 
