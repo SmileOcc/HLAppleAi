@@ -14,7 +14,9 @@ class MockProductService implements ProductService {
         image: 'https://picsum.photos/300/400?random=${index + 30}',
         sales: 80 + index * 30,
         rating: 4.0 + (index % 10) * 0.1,
-        description: '优质商品，性价比高',
+        description: index == 0
+            ? '🎉【限时狂欢价】直降 500 元！今日下单享 12 期免息分期，每天仅需一杯咖啡钱。前 100 名下单用户额外赠送官方同款保护套 + 刻字服务。支持 7 天无理由退换，享两年 Apple Care+ 延保优惠。以旧换新至高补贴 800 元。京东物流极速达，部分城市半日送达。限时抢购，错过再等一年！搭载全新 H2 芯片，降噪能力提升 2 倍。自适应通透模式，个性化空间音频带来影院级音效。单次充电聆听 6 小时，配合充电盒续航 30 小时。IPX4 抗汗防水，支持触控音量调节及 Find My 查找。'
+            : '优质商品，采用进口材料制造，经过严格质量检测。支持七天无理由退换货，全国联保一年。适用于各种场景，无论是办公还是家用都非常合适。产品包装精美，送礼自用两相宜。',
         categoryId: (index % 8) + 1,
         stock: 50 + index * 5,
         colors: _getProductColors(index),
@@ -35,7 +37,8 @@ class MockProductService implements ProductService {
         image: 'https://picsum.photos/300/350?random=${index + 50}',
         sales: 200 + index * 50,
         rating: 4.5 + (index % 5) * 0.1,
-        description: '热门爆款，限时特惠',
+        description:
+            '热门爆款，限时特惠。采用最新科技材料打造，手感舒适，耐用性强。支持多种使用场景，无论是商务办公还是日常娱乐都能完美胜任。全国联保，售后无忧。',
         categoryId: (index % 6) + 1,
         stock: 20 + index * 3,
         colors: _getProductColors(index),
@@ -57,7 +60,8 @@ class MockProductService implements ProductService {
             'https://picsum.photos/300/380?random=${categoryId * 10 + index}',
         sales: 100 + index * 40,
         rating: 4.2 + (index % 8) * 0.1,
-        description: '精选商品，品质保证',
+        description:
+            '精选商品，品质保证。严格把控每一个生产环节，确保产品质量达到行业标准。经过多次测试验证，性能稳定可靠。包装精美，送礼自用两相宜。',
         categoryId: categoryId,
         stock: 30 + index * 10,
         colors: _getProductColors(index),
