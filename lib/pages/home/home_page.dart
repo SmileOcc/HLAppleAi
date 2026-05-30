@@ -17,6 +17,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final ScrollController _scrollController = ScrollController();
+  double _scrollOffset = 0;
 
   @override
   void initState() {
@@ -34,57 +35,78 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _onScroll() {
+    setState(() => _scrollOffset = _scrollController.offset);
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
       context.read<HomeProvider>().loadMore();
     }
   }
 
+  Color _getAppBarColor() {
+    const maxScroll = 100.0;
+    final progress = (_scrollOffset / maxScroll).clamp(0.0, 1.0);
+    return Color.lerp(AppColors.primary, Colors.white, progress)!;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final appBarColor = _getAppBarColor();
+    final isDark = appBarColor.computeLuminance() < 0.5;
+
     return Scaffold(
+      backgroundColor: appBarColor,
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () => context.read<HomeProvider>().refresh(),
-          child: CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              _buildAppBar(),
-              _buildSearchBar(),
-              _buildBanner(),
-              _buildQuickCategories(),
-              _buildRecommendTitle(),
-              _buildProductGrid(),
-            ],
+        child: Container(
+          color: AppColors.background,
+          child: RefreshIndicator(
+            onRefresh: () => context.read<HomeProvider>().refresh(),
+            child: CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                _buildAppBar(appBarColor, isDark),
+                _buildSearchBar(appBarColor, isDark),
+                _buildBanner(),
+                _buildQuickCategories(),
+                _buildRecommendTitle(),
+                _buildProductGrid(),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildAppBar() {
+  Widget _buildAppBar(Color color, bool isDark) {
     return SliverAppBar(
       floating: true,
-      backgroundColor: AppColors.primary,
-      title: const Text(
+      backgroundColor: color,
+      elevation: 0,
+      title: Text(
         AppConstants.appName,
-        style: TextStyle(color: AppColors.white, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          color: isDark ? AppColors.white : AppColors.textPrimary,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.message_outlined, color: AppColors.white),
+          icon: Icon(
+            Icons.message_outlined,
+            color: isDark ? AppColors.white : AppColors.textPrimary,
+          ),
           onPressed: () {},
         ),
       ],
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(Color appBarColor, bool isDark) {
     final l10n = AppLocalizations.of(context);
     return SliverToBoxAdapter(
       child: Container(
         padding: const EdgeInsets.all(AppConstants.paddingMedium),
-        color: AppColors.primary,
+        color: appBarColor,
         child: GestureDetector(
           onTap: () {
             Navigator.push(
@@ -95,22 +117,26 @@ class _HomePageState extends State<HomePage> {
           child: Container(
             height: 40,
             decoration: BoxDecoration(
-              color: AppColors.white,
+              color: isDark ? AppColors.white : AppColors.background,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Icons.search,
-                  color: AppColors.textSecondary,
+                  color: isDark
+                      ? AppColors.textSecondary
+                      : AppColors.textPrimary,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   l10n.searchHint,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
+                  style: TextStyle(
+                    color: isDark
+                        ? AppColors.textSecondary
+                        : AppColors.textPrimary,
                     fontSize: 14,
                   ),
                 ),
