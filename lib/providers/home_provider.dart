@@ -73,12 +73,12 @@ class HomeProvider extends ChangeNotifier {
 class CategoryProvider extends ChangeNotifier {
   List<Category> _categories = [];
   Category? _selectedCategory;
-  List<Product> _products = [];
+  int? _selectedSubCategoryId;
   bool _isLoading = false;
 
   List<Category> get categories => _categories;
   Category? get selectedCategory => _selectedCategory;
-  List<Product> get products => _products;
+  int? get selectedSubCategoryId => _selectedSubCategoryId;
   bool get isLoading => _isLoading;
 
   Future<void> loadCategories() async {
@@ -89,7 +89,9 @@ class CategoryProvider extends ChangeNotifier {
       _categories = await MockDataService.getCategories();
       if (_categories.isNotEmpty) {
         _selectedCategory = _categories.first;
-        await loadProducts();
+        if (_selectedCategory!.children.isNotEmpty) {
+          _selectedSubCategoryId = _selectedCategory!.children.first.id;
+        }
       }
     } catch (e) {
       debugPrint('CategoryProvider loadCategories error: $e');
@@ -101,29 +103,20 @@ class CategoryProvider extends ChangeNotifier {
 
   void selectCategory(Category category) {
     _selectedCategory = category;
+    _selectedSubCategoryId = null;
+    if (category.children.isNotEmpty) {
+      _selectedSubCategoryId = category.children.first.id;
+    }
     notifyListeners();
-    loadProducts();
   }
 
-  Future<void> loadProducts() async {
-    if (_selectedCategory == null) return;
-
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      _products = await MockDataService.getProductsByCategory(
-        _selectedCategory!.id,
-      );
-    } catch (e) {
-      debugPrint('CategoryProvider loadProducts error: $e');
-    }
-
-    _isLoading = false;
+  void selectSubCategory(int subCategoryId) {
+    _selectedSubCategoryId = subCategoryId;
     notifyListeners();
   }
 
   Future<void> refresh() async {
+    _selectedSubCategoryId = null;
     await loadCategories();
   }
 }
