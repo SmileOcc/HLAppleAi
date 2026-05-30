@@ -5,7 +5,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/l10n/app_localizations.dart';
 import '../../providers/cart_provider.dart';
 import '../home/product_detail_page.dart';
-import 'checkout_page.dart';
+import '../checkout/checkout_page.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});

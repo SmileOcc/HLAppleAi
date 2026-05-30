@@ -6,6 +6,7 @@ import '../../core/l10n/app_localizations.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/locale_provider.dart';
 import 'order_list_page.dart';
+import 'after_sales_list_page.dart';
 import 'favorite_page.dart';
 import 'address_page.dart';
 import 'coupon_page.dart';
@@ -227,23 +228,27 @@ class _ProfilePageState extends State<ProfilePage> {
                   icon: Icons.payment,
                   label: l10n.pending,
                   count: provider.pendingOrderCount,
+                  tabIndex: 1,
                 ),
                 _buildOrderItem(
                   icon: Icons.local_shipping,
                   label: l10n.paid,
                   count: 0,
+                  tabIndex: 2,
                 ),
                 _buildOrderItem(
                   icon: Icons.inventory_2,
                   label: l10n.shipped,
                   count: provider.shippedOrderCount,
+                  tabIndex: 3,
                 ),
                 _buildOrderItem(
                   icon: Icons.check_circle_outline,
                   label: l10n.completed,
                   count: provider.completedOrderCount,
+                  tabIndex: 4,
                 ),
-                _buildOrderItem(
+                _buildAfterSaleItem(
                   icon: Icons.replay,
                   label: l10n.afterSale,
                   count: 0,
@@ -260,9 +265,68 @@ class _ProfilePageState extends State<ProfilePage> {
     required IconData icon,
     required String label,
     required int count,
+    required int tabIndex,
   }) {
     return GestureDetector(
-      onTap: () {},
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OrderListPage(initialTab: tabIndex),
+          ),
+        );
+      },
+      child: Column(
+        children: [
+          Stack(
+            children: [
+              Icon(icon, size: 28, color: AppColors.textPrimary),
+              if (count > 0)
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: AppColors.error,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      count > 9 ? '9+' : count.toString(),
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.white,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAfterSaleItem({
+    required IconData icon,
+    required String label,
+    required int count,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AfterSalesListPage()),
+        );
+      },
       child: Column(
         children: [
           Stack(

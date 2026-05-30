@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>We use photos to save your favorite moments</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We use photos to save your favorite moments</string>
 </dict>
 </plist>

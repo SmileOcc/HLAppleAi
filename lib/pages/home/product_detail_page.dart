@@ -9,8 +9,9 @@ import '../../data/models/product.dart';
 import '../../data/services/mock_product_service.dart';
 import '../../providers/cart_provider.dart';
 import '../../widgets/share/share_dialog.dart';
-import '../cart/checkout_page.dart';
+import '../checkout/checkout_page.dart';
 import '../community/post_detail_page.dart';
+import 'product_image_viewer_page.dart';
 
 class ProductDetailPage extends StatefulWidget {
   final Product product;
@@ -438,9 +439,22 @@ class _ProductDetailPageState extends State<ProductDetailPage>
               },
               itemCount: 5,
               itemBuilder: (context, index) {
-                return CachedNetworkImage(
-                  imageUrl: widget.product.image,
-                  fit: BoxFit.cover,
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ProductImageViewerPage(
+                          imageUrls: _getImageUrls(),
+                          initialIndex: index,
+                        ),
+                      ),
+                    );
+                  },
+                  child: CachedNetworkImage(
+                    imageUrl: widget.product.image,
+                    fit: BoxFit.cover,
+                  ),
                 );
               },
             ),
@@ -1137,6 +1151,10 @@ class _ProductDetailPageState extends State<ProductDetailPage>
       Navigator.pop(context);
       ToastUtil.showSuccess(context, l10n.addedToCart);
     }
+  }
+
+  List<String> _getImageUrls() {
+    return List.generate(5, (_) => widget.product.image);
   }
 }
 
