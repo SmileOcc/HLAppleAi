@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../core/constants/app_constants.dart';
 import '../data/models/product.dart';
+import 'network_image_widget.dart';
 
 class ProductCard extends StatelessWidget {
   final Product product;
   final VoidCallback? onTap;
   final bool isGrid;
+  final double? waterfallHeight;
 
   const ProductCard({
     super.key,
     required this.product,
     this.onTap,
     this.isGrid = true,
+    this.waterfallHeight,
   });
 
   @override
@@ -39,23 +41,16 @@ class ProductCard extends StatelessWidget {
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(AppConstants.radiusMedium),
               ),
-              child: AspectRatio(
-                aspectRatio: 1,
-                child: CachedNetworkImage(
-                  imageUrl: product.image,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    color: AppColors.background,
-                    child: const Center(
-                      child: CircularProgressIndicator(strokeWidth: 2),
+              child: waterfallHeight != null
+                  ? NetworkImageWidget(
+                      imageUrl: product.image,
+                      height: waterfallHeight,
+                      width: double.infinity,
+                    )
+                  : AspectRatio(
+                      aspectRatio: 1,
+                      child: NetworkImageWidget(imageUrl: product.image),
                     ),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    color: AppColors.background,
-                    child: const Icon(Icons.image_not_supported),
-                  ),
-                ),
-              ),
             ),
             Padding(
               padding: const EdgeInsets.all(AppConstants.paddingSmall),
@@ -123,21 +118,10 @@ class ProductCard extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(AppConstants.radiusSmall),
-              child: CachedNetworkImage(
+              child: NetworkImageWidget(
                 imageUrl: product.image,
                 width: 100,
                 height: 100,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  color: AppColors.background,
-                  child: const Center(
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  color: AppColors.background,
-                  child: const Icon(Icons.image_not_supported),
-                ),
               ),
             ),
             const SizedBox(width: AppConstants.paddingSmall),

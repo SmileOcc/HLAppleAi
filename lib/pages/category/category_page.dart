@@ -7,7 +7,9 @@ import '../../providers/home_provider.dart';
 import '../../data/models/category.dart';
 import '../../data/models/product.dart';
 import '../../data/services/mock_data_service.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../widgets/product_card.dart';
+import '../../widgets/empty_state_widget.dart';
 import '../home/product_detail_page.dart';
 import '../home/search_page.dart';
 
@@ -374,56 +376,180 @@ class _SubCategoryProductsPage extends StatefulWidget {
 }
 
 class _SubCategoryProductsPageState extends State<_SubCategoryProductsPage> {
+  final ScrollController _scrollController = ScrollController();
   List<Product> _products = [];
+  int _currentPage = 1;
+  bool _hasMore = true;
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _loadProducts();
+    _initLoad();
+    _scrollController.addListener(_onScroll);
   }
 
-  Future<void> _loadProducts() async {
-    final products = await MockDataService.getProductsByCategory(
-      widget.subCategory.id,
-    );
-    if (mounted) {
-      setState(() {
-        _products = products;
-        _isLoading = false;
-      });
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 300 &&
+        !_isLoadingMore &&
+        _hasMore &&
+        _error == null &&
+        _products.isNotEmpty) {
+      _loadMore();
     }
+  }
+
+  Future<void> _initLoad() async {
+    _isLoading = true;
+    _error = null;
+    setState(() {});
+    try {
+      final products = await MockDataService.getCategoryProducts(
+        categoryId: widget.subCategory.id,
+        page: 1,
+      );
+      _products = products;
+      _currentPage = 1;
+      _hasMore = products.length >= MockDataService.categoryPageSize;
+    } catch (e) {
+      _error = e.toString();
+    }
+    _isLoading = false;
+    setState(() {});
+  }
+
+  Future<void> _onRefresh() async {
+    _error = null;
+    setState(() {});
+    try {
+      final products = await MockDataService.getCategoryProducts(
+        categoryId: widget.subCategory.id,
+        page: 1,
+      );
+      _products = products;
+      _currentPage = 1;
+      _hasMore = products.length >= MockDataService.categoryPageSize;
+    } catch (e) {
+      _error = e.toString();
+    }
+    setState(() {});
+  }
+
+  Future<void> _loadMore() async {
+    _isLoadingMore = true;
+    setState(() {});
+    try {
+      final nextPage = _currentPage + 1;
+      final products = await MockDataService.getCategoryProducts(
+        categoryId: widget.subCategory.id,
+        page: nextPage,
+      );
+      _products.addAll(products);
+      _currentPage = nextPage;
+      _hasMore = products.length >= MockDataService.categoryPageSize;
+    } catch (e) {
+      _error = e.toString();
+    }
+    _isLoadingMore = false;
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(widget.subCategory.name)),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : GridView.builder(
-              padding: const EdgeInsets.all(AppConstants.paddingSmall),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: AppConstants.paddingSmall,
-                crossAxisSpacing: AppConstants.paddingSmall,
-                childAspectRatio: 0.6,
-              ),
-              itemCount: _products.length,
-              itemBuilder: (context, index) {
-                final product = _products[index];
-                return ProductCard(
-                  product: product,
-                  isGrid: true,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ProductDetailPage(product: product),
-                    ),
-                  ),
-                );
-              },
-            ),
+      body: RefreshIndicator(
+        onRefresh: _onRefresh,
+        child: CustomScrollView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            _buildContent(),
+            _buildFooter(),
+            const SliverPadding(padding: EdgeInsets.only(bottom: 40)),
+          ],
+        ),
+      ),
     );
+  }
+
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const SliverFillRemaining(
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_error != null && _products.isEmpty) {
+      return SliverFillRemaining(
+        child: EmptyStateWidget.error(message: _error!, onAction: _onRefresh),
+      );
+    }
+    if (_products.isEmpty) {
+      return SliverFillRemaining(
+        child: const EmptyStateWidget.empty(message: '暂无商品'),
+      );
+    }
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      sliver: SliverMasonryGrid.count(
+        crossAxisCount: 2,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+        itemBuilder: (context, index) => ProductCard(
+          product: _products[index],
+          waterfallHeight: 180 + (_products[index].id % 5) * 20,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ProductDetailPage(product: _products[index]),
+              ),
+            );
+          },
+        ),
+        childCount: _products.length,
+      ),
+    );
+  }
+
+  Widget _buildFooter() {
+    if (_isLoadingMore) {
+      return SliverToBoxAdapter(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: const Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        ),
+      );
+    }
+    if (!_hasMore && _products.isNotEmpty) {
+      return SliverToBoxAdapter(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: const Center(
+            child: Text(
+              '暂无更多数据',
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            ),
+          ),
+        ),
+      );
+    }
+    return const SliverToBoxAdapter(child: SizedBox.shrink());
   }
 }

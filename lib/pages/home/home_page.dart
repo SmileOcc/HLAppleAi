@@ -53,9 +53,9 @@ class _HomePageState extends State<HomePage> {
     final appBarColor = _getAppBarColor();
     final isDark = appBarColor.computeLuminance() < 0.5;
 
-    return Scaffold(
-      backgroundColor: appBarColor,
-      body: SafeArea(
+    return Container(
+      color: appBarColor,
+      child: SafeArea(
         child: Container(
           color: AppColors.background,
           child: RefreshIndicator(
@@ -82,6 +82,20 @@ class _HomePageState extends State<HomePage> {
       floating: true,
       backgroundColor: color,
       elevation: 0,
+      leading: Builder(
+        builder: (ctx) => IconButton(
+          icon: CircleAvatar(
+            radius: 16,
+            backgroundColor: isDark ? Colors.white24 : Colors.black12,
+            child: Icon(
+              Icons.person,
+              size: 20,
+              color: isDark ? AppColors.white : AppColors.textPrimary,
+            ),
+          ),
+          onPressed: () => Scaffold.of(ctx).openDrawer(),
+        ),
+      ),
       title: Text(
         AppConstants.appName,
         style: TextStyle(

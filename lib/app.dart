@@ -9,6 +9,7 @@ import 'pages/cart/cart_page.dart';
 import 'pages/category/category_page.dart';
 import 'pages/community/community_page.dart';
 import 'pages/home/home_page.dart';
+import 'widgets/settings_drawer.dart';
 import 'pages/profile/profile_page.dart';
 import 'providers/cart_provider.dart';
 import 'providers/comment_provider.dart';
@@ -77,6 +78,7 @@ class _MainPageState extends State<MainPage> {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
+      drawer: const SettingsDrawer(),
       body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,

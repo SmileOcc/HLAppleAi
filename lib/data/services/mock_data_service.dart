@@ -5,6 +5,43 @@ import '../models/post.dart';
 import '../models/shop.dart';
 
 class MockDataService {
+  static const int totalShopProducts = 25;
+  static const int shopPageSize = 10;
+
+  static Future<List<Product>> getShopProducts({
+    int page = 1,
+    int pageSize = 10,
+    bool simulateError = false,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (simulateError) {
+      throw Exception('网络异常，请检查网络连接');
+    }
+    final start = (page - 1) * pageSize;
+    if (start >= totalShopProducts) return [];
+    final end = (start + pageSize > totalShopProducts)
+        ? totalShopProducts
+        : start + pageSize;
+    return List.generate(end - start, (index) {
+      final i = start + index;
+      return Product(
+        id: 100 + i,
+        name: _getProductName(i),
+        price: 99.0 + (i * 10),
+        originalPrice: 199.0 + (i * 20),
+        image:
+            'https://picsum.photos/seed/shop${i}/${300 + (i % 5) * 50}/300?random=${i}',
+        sales: 100 + i * 50,
+        rating: 4.0 + (i % 10) * 0.1,
+        description: '优质商品，性价比高，限时优惠中',
+        categoryId: (i % 8) + 1,
+        stock: 100,
+        colors: _getProductColors(i),
+        sizes: _getSizeOptions()[i % _getSizeOptions().length],
+      );
+    });
+  }
+
   static Future<List<Map<String, dynamic>>> getBanners() async {
     await Future.delayed(const Duration(milliseconds: 300));
     return [
@@ -85,6 +122,11 @@ class MockDataService {
       '蓝牙音箱',
       '智能手环',
       '无线鼠标',
+      '机械键盘',
+      'USB扩展坞',
+      '显示器支架',
+      '电竞耳机',
+      '平板保护套',
     ];
     return names[index % names.length];
   }
@@ -440,6 +482,100 @@ class MockDataService {
       );
     });
   }
+
+  static const int categoryTotalProducts = 25;
+  static const int categoryPageSize = 10;
+
+  static Future<List<Product>> getCategoryProducts({
+    required int categoryId,
+    int page = 1,
+    int pageSize = 10,
+    bool simulateError = false,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (simulateError) {
+      throw Exception('网络异常，请检查网络连接');
+    }
+    final start = (page - 1) * pageSize;
+    if (start >= categoryTotalProducts) return [];
+    final end = (start + pageSize > categoryTotalProducts)
+        ? categoryTotalProducts
+        : start + pageSize;
+    final baseNames = _categoryProductNames[categoryId] ?? ['商品'];
+    return List.generate(end - start, (index) {
+      final i = start + index;
+      final nameIndex = i % baseNames.length;
+      final suffix = i >= baseNames.length
+          ? ' ${i ~/ baseNames.length + 1}'
+          : '';
+      final name = '${baseNames[nameIndex]}$suffix';
+      return Product(
+        id: categoryId * 100 + i + 1,
+        name: name,
+        price: (59 + i * 20 + categoryId * 10).toDouble(),
+        originalPrice: (99 + i * 40 + categoryId * 20).toDouble(),
+        image:
+            'https://picsum.photos/seed/cat${categoryId}_$i/${300 + (i % 5) * 50}/300',
+        sales: 50 + i * 30,
+        rating: 4.0 + (i % 5) * 0.2,
+        description: '高品质$name，性价比超高',
+        categoryId: categoryId,
+        stock: 50 + i * 10,
+      );
+    });
+  }
+
+  static final Map<int, List<String>> _categoryProductNames = {
+    111: ['iPhone 15 Pro', 'iPhone 15', 'iPhone 14', 'iPhone SE'],
+    112: ['诺基亚 老人机', '飞利浦 老人手机', '守护宝 老人手机'],
+    113: ['红米 K70', '黑鲨 5 Pro', 'ROG 游戏手机'],
+    114: ['华为 Mate 60 Pro', '小米 14', 'OPPO Find X7'],
+    121: ['硅胶手机壳', '透明防摔壳', '磁吸手机壳'],
+    122: ['20W 快充头', '65W 氮化镓充电器', '100W 超级快充'],
+    123: ['Type-C 数据线', 'Lightning 数据线', '编织快充线'],
+    124: ['钢化膜', '防窥膜', '磨砂保护膜'],
+    211: ['MacBook Air M3', 'ThinkPad X1 Carbon', '华为 MateBook'],
+    212: ['iMac 24寸', '联想 拯救者台式', 'DIY 游戏主机'],
+    213: ['iPad Pro 12.9', '华为 MatePad Pro', '小米平板 6'],
+    214: ['惠普 一体机', '苹果 iMac', '联想 AIO'],
+    221: ['DDR5 16GB', 'DDR4 32GB', '笔记本内存条'],
+    222: ['三星 1TB SSD', '西数 2TB 机械硬盘', '希捷 4TB'],
+    223: ['RTX 4070', 'RTX 4090', 'AMD RX 7800 XT'],
+    224: ['27寸 4K 显示器', '32寸 带鱼屏', '电竞 144Hz'],
+    311: ['索尼 WH-1000XM5', 'Bose QC45', '森海塞尔 HD600'],
+    312: ['AirPods Pro 2', '索尼 WF-1000XM5', '华为 FreeBuds Pro'],
+    313: ['JBL Flip 6', 'Bose SoundLink', 'Marshall Emberton'],
+    321: ['索尼 Walkman', '海贝 R6 Pro', '飞傲 M11'],
+    322: ['Blue Yeti 麦克风', '铁桶 AT2020', '舒尔 SM7B'],
+    323: ['索尼录音笔', '科大讯飞录音笔', '飞利浦录音笔'],
+    411: ['Garmin Fenix 7', '颂拓 9 Peak', '佳明 Forerunner'],
+    412: ['Apple Watch Ultra', '卡西欧 G-SHOCK', '华为 Watch GT4'],
+    421: ['小米手环 8', '华为手环 8', '荣耀手环 7'],
+    422: ['Meta Quest 3', 'PICO 4', 'PSVR 2'],
+    511: ['索尼 A7M4', '佳能 R6 Mark II', '尼康 Z8'],
+    512: ['GoPro Hero 12', '大疆 Action 4', 'Insta360'],
+    521: ['碳纤维三脚架', '液压云台', '便携三脚架'],
+    522: ['SDXC 128GB', 'CFexpress 卡', 'TF 卡 256GB'],
+    523: ['单反相机包', '双肩摄影包', '防水内胆包'],
+    611: ['PS5 光驱版', 'Xbox Series X', 'Switch OLED'],
+    612: ['Steam Deck', '华硕 ROG Ally', '联想 Legion Go'],
+    621: ['Xbox 手柄', 'PS5 DualSense', 'Switch Pro 手柄'],
+    622: ['Cherry MX 机械键盘', '罗技 G915', '雷蛇黑寡妇'],
+    623: ['罗技 GPW', '雷蛇毒蝰', '赛睿 Rival'],
+    711: ['HomePod mini', '小爱音箱 Pro', '天猫精灵'],
+    712: ['小度在家', '天猫精灵 CC', 'Home Hub'],
+    721: ['小米智能门锁', '鹿客密码锁', '凯迪仕指纹锁'],
+    722: ['小米摄像头', '萤石云摄像头', '360 智能摄像机'],
+    723: ['小米门铃', 'Ring 门铃', '萤石可视门铃'],
+    731: ['Philips Hue 灯泡', 'Yeelight 智能灯', '小米智能灯泡'],
+    732: ['RGB 灯带', '氛围灯带', '小米灯带'],
+    811: ['Type-C 编织线', 'Lightning 线', '三合一数据线'],
+    812: ['Type-C 转 HDMI', 'USB 转接头', 'OTG 转换器'],
+    813: ['贝尔金扩展坞', '绿联 10 合 1', 'CalDigit TS4'],
+    821: ['惠普 LaserJet', '兄弟 彩色打印机', '佳能喷墨打印机'],
+    822: ['惠普扫描仪', '富士通 馈纸式', '爱普生 平板扫描'],
+    823: ['极米投影仪', '爱普生投影仪', '明基家用投影'],
+  };
 
   static Future<List<Post>> getPosts({String type = 'recommend'}) async {
     await Future.delayed(const Duration(milliseconds: 400));

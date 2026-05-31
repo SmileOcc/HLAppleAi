@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../core/constants/app_constants.dart';
 import '../../data/models/product.dart';
 import '../../data/models/shop.dart';
 import '../../data/services/mock_data_service.dart';
 import '../../widgets/product_card.dart';
+import '../../widgets/empty_state_widget.dart';
 import 'product_detail_page.dart';
 
 class ShopDetailPage extends StatefulWidget {
@@ -17,19 +19,82 @@ class ShopDetailPage extends StatefulWidget {
 }
 
 class _ShopDetailPageState extends State<ShopDetailPage> {
+  final ScrollController _scrollController = ScrollController();
   List<Product> _products = [];
+  int _currentPage = 1;
+  bool _hasMore = true;
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _loadProducts();
+    _initLoad();
+    _scrollController.addListener(_onScroll);
   }
 
-  Future<void> _loadProducts() async {
-    final products = await MockDataService.getRecommendProducts();
-    _products = products;
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 300 &&
+        !_isLoadingMore &&
+        _hasMore &&
+        _error == null &&
+        _products.isNotEmpty) {
+      _loadMore();
+    }
+  }
+
+  Future<void> _initLoad() async {
+    _isLoading = true;
+    _error = null;
+    setState(() {});
+    try {
+      final products = await MockDataService.getShopProducts(page: 1);
+      _products = products;
+      _currentPage = 1;
+      _hasMore = products.length >= MockDataService.shopPageSize;
+    } catch (e) {
+      _error = e.toString();
+    }
     _isLoading = false;
+    setState(() {});
+  }
+
+  Future<void> _onRefresh() async {
+    _error = null;
+    setState(() {});
+    try {
+      final products = await MockDataService.getShopProducts(page: 1);
+      _products = products;
+      _currentPage = 1;
+      _hasMore = products.length >= MockDataService.shopPageSize;
+    } catch (e) {
+      _error = e.toString();
+    }
+    setState(() {});
+  }
+
+  Future<void> _loadMore() async {
+    _isLoadingMore = true;
+    setState(() {});
+    try {
+      final nextPage = _currentPage + 1;
+      final products = await MockDataService.getShopProducts(page: nextPage);
+      _products.addAll(products);
+      _currentPage = nextPage;
+      _hasMore = products.length >= MockDataService.shopPageSize;
+    } catch (e) {
+      _error = e.toString();
+    }
+    _isLoadingMore = false;
     setState(() {});
   }
 
@@ -37,47 +102,93 @@ class _ShopDetailPageState extends State<ShopDetailPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(),
-          SliverToBoxAdapter(child: _buildShopInfo()),
-          SliverToBoxAdapter(child: _buildSectionTitle()),
-          _isLoading
-              ? const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              : SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  sliver: SliverGrid(
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.65,
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
-                        ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) => ProductCard(
-                        product: _products[index % _products.length],
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ProductDetailPage(
-                                product: _products[index % _products.length],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      childCount: _products.length,
-                    ),
-                  ),
-                ),
-          const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
-        ],
+      body: RefreshIndicator(
+        onRefresh: _onRefresh,
+        child: CustomScrollView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            _buildSliverAppBar(),
+            SliverToBoxAdapter(child: _buildShopInfo()),
+            if (!_isLoading || _products.isNotEmpty)
+              SliverToBoxAdapter(child: _buildSectionTitle()),
+            _buildProductContent(),
+            _buildFooter(),
+            const SliverPadding(padding: EdgeInsets.only(bottom: 40)),
+          ],
+        ),
       ),
     );
+  }
+
+  Widget _buildProductContent() {
+    if (_isLoading) {
+      return const SliverFillRemaining(
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_error != null && _products.isEmpty) {
+      return SliverFillRemaining(
+        child: EmptyStateWidget.error(message: _error!, onAction: _onRefresh),
+      );
+    }
+    if (_products.isEmpty) {
+      return SliverFillRemaining(
+        child: const EmptyStateWidget.empty(message: '暂无商品'),
+      );
+    }
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      sliver: SliverMasonryGrid.count(
+        crossAxisCount: 2,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+        itemBuilder: (context, index) => ProductCard(
+          product: _products[index],
+          waterfallHeight: 180 + (_products[index].id % 5) * 20,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ProductDetailPage(product: _products[index]),
+              ),
+            );
+          },
+        ),
+        childCount: _products.length,
+      ),
+    );
+  }
+
+  Widget _buildFooter() {
+    if (_isLoadingMore) {
+      return SliverToBoxAdapter(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: const Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        ),
+      );
+    }
+    if (!_hasMore && _products.isNotEmpty) {
+      return SliverToBoxAdapter(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: const Center(
+            child: Text(
+              '暂无更多数据',
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            ),
+          ),
+        ),
+      );
+    }
+    return const SliverToBoxAdapter(child: SizedBox.shrink());
   }
 
   Widget _buildSliverAppBar() {
