@@ -2,6 +2,7 @@ import '../models/comment.dart';
 import '../models/product.dart';
 import '../models/category.dart';
 import '../models/post.dart';
+import '../models/shop.dart';
 
 class MockDataService {
   static Future<List<Map<String, dynamic>>> getBanners() async {
@@ -832,6 +833,20 @@ class MockDataService {
         'time': times[index % times.length],
       };
     });
+  }
+
+  static Future<Shop> getShop() async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return Shop(
+      id: 1,
+      name: '苹果优选官方旗舰店',
+      logo: 'https://picsum.photos/seed/shoplogo/200/200',
+      cover: 'https://picsum.photos/seed/shopcover/750/400',
+      description: '正品保障 · 品质优选 · 极速发货',
+      followerCount: 128000,
+      rating: 4.8,
+      productCount: 586,
+    );
   }
 
   static Future<Map<String, dynamic>> getCurrentUser() async {

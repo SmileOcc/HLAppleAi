@@ -5,6 +5,8 @@ import '../../core/constants/app_constants.dart';
 import '../../core/l10n/app_localizations.dart';
 import '../../core/utils/toast_util.dart';
 import '../../data/models/product.dart';
+import '../../data/models/shop.dart';
+import '../../data/services/mock_data_service.dart';
 import '../../data/services/mock_product_service.dart';
 import '../../providers/cart_provider.dart';
 import '../../widgets/bottom_icon_with_badge.dart';
@@ -14,6 +16,7 @@ import '../../widgets/share/share_dialog.dart';
 import '../cart/cart_page.dart';
 import '../checkout/checkout_page.dart';
 import 'review_list_page.dart';
+import 'shop_detail_page.dart';
 import '../community/post_detail_page.dart';
 
 class ProductDetailPage extends StatefulWidget {
@@ -38,6 +41,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
   final ScrollController _scrollController = ScrollController();
   bool _showAppBarTitle = false;
   List<Product> _recommendProducts = [];
+  Shop? _shop;
   bool _isLoading = true;
 
   final List<Map<String, String>> _guarantees = [
@@ -90,6 +94,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeSelections();
       _loadProducts();
+      _loadShop();
       _checkDescriptionLength();
     });
     _scrollController.addListener(_onScroll);
@@ -143,6 +148,13 @@ class _ProductDetailPageState extends State<ProductDetailPage>
     }
   }
 
+  Future<void> _loadShop() async {
+    final shop = await MockDataService.getShop();
+    if (mounted) {
+      setState(() => _shop = shop);
+    }
+  }
+
   void _showShareDialog() {
     ShareDialog.show(
       context,
@@ -187,6 +199,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
                 SliverToBoxAdapter(child: _buildPriceSection(discount)),
                 SliverToBoxAdapter(child: _buildDescriptionSection()),
                 SliverToBoxAdapter(child: _buildTitleSection()),
+                SliverToBoxAdapter(child: _buildShopSection()),
                 SliverToBoxAdapter(child: _buildSpecSection()),
                 SliverToBoxAdapter(child: _buildGuaranteeSection()),
                 SliverToBoxAdapter(child: _buildReviewSection()),
@@ -494,6 +507,102 @@ class _ProductDetailPageState extends State<ProductDetailPage>
         ),
       ),
     );
+  }
+
+  Widget _buildShopSection() {
+    if (_shop == null) return const SizedBox.shrink();
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ShopDetailPage(shop: _shop!)),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        color: AppColors.white,
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: CachedNetworkImage(
+                imageUrl: _shop!.logo,
+                width: 48,
+                height: 48,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _shop!.name,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      ...List.generate(5, (i) {
+                        return Icon(
+                          i < _shop!.rating.floor()
+                              ? Icons.star
+                              : Icons.star_border,
+                          size: 12,
+                          color: AppColors.warning,
+                        );
+                      }),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${_formatCount(_shop!.followerCount)}人关注',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Text(
+                '进入店铺',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(
+              Icons.chevron_right,
+              color: AppColors.textSecondary,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatCount(int count) {
+    if (count >= 10000) {
+      return '${(count / 10000).toStringAsFixed(1)}万';
+    }
+    return count.toString();
   }
 
   Widget _buildSpecSection() {
@@ -985,7 +1094,16 @@ class _ProductDetailPageState extends State<ProductDetailPage>
                     size: 22,
                   ),
                   label: '店铺',
-                  onTap: () {},
+                  onTap: () {
+                    if (_shop != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ShopDetailPage(shop: _shop!),
+                        ),
+                      );
+                    }
+                  },
                 ),
                 const SizedBox(width: 16),
                 BottomIconWithBadge(
