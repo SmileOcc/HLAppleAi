@@ -24,6 +24,7 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
   late PageController _pageController;
   late int _currentIndex;
   bool _isDownloading = false;
+  bool _isZoomed = false;
 
   @override
   void initState() {
@@ -36,6 +37,12 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _onZoomChanged(bool zoomed) {
+    if (_isZoomed != zoomed) {
+      setState(() => _isZoomed = zoomed);
+    }
   }
 
   Future<void> _downloadImage(String imageUrl) async {
@@ -133,13 +140,18 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
             controller: _pageController,
             itemCount: widget.imageUrls.length,
             clipBehavior: Clip.none,
+            physics: _isZoomed
+                ? const NeverScrollableScrollPhysics()
+                : const BouncingScrollPhysics(),
             onPageChanged: (index) {
+              _isZoomed = false;
               setState(() => _currentIndex = index);
             },
             itemBuilder: (context, index) {
               return _ImageItem(
                 imageUrl: widget.imageUrls[index],
                 onLongPress: () => _showDownloadDialog(widget.imageUrls[index]),
+                onZoomChanged: _onZoomChanged,
               );
             },
           ),
@@ -180,8 +192,13 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
 class _ImageItem extends StatefulWidget {
   final String imageUrl;
   final VoidCallback onLongPress;
+  final ValueChanged<bool>? onZoomChanged;
 
-  const _ImageItem({required this.imageUrl, required this.onLongPress});
+  const _ImageItem({
+    required this.imageUrl,
+    required this.onLongPress,
+    this.onZoomChanged,
+  });
 
   @override
   State<_ImageItem> createState() => _ImageItemState();
@@ -191,14 +208,36 @@ class _ImageItemState extends State<_ImageItem> {
   final TransformationController _transformationController =
       TransformationController();
   bool _showControls = true;
+  bool _isZoomed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _transformationController.addListener(_onTransformChanged);
+  }
+
+  void _onTransformChanged() {
+    final scale = _transformationController.value.getMaxScaleOnAxis();
+    final isZoomed = scale > 1.01;
+    if (isZoomed != _isZoomed) {
+      _isZoomed = isZoomed;
+      widget.onZoomChanged?.call(_isZoomed);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _showControls = !_showControls;
-        });
+        if (_isZoomed) {
+          _transformationController.value = Matrix4.identity();
+          _isZoomed = false;
+          widget.onZoomChanged?.call(false);
+        } else {
+          setState(() {
+            _showControls = !_showControls;
+          });
+        }
       },
       onLongPress: widget.onLongPress,
       behavior: HitTestBehavior.translucent,
@@ -223,6 +262,7 @@ class _ImageItemState extends State<_ImageItem> {
 
   @override
   void dispose() {
+    _transformationController.removeListener(_onTransformChanged);
     _transformationController.dispose();
     super.dispose();
   }

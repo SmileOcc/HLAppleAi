@@ -600,10 +600,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => ReviewListPage(
-                          product: widget.product,
-                          reviews: _reviews,
-                        ),
+                        builder: (_) => ReviewListPage(product: widget.product),
                       ),
                     );
                   },

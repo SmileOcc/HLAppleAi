@@ -11,6 +11,7 @@ import 'pages/community/community_page.dart';
 import 'pages/home/home_page.dart';
 import 'pages/profile/profile_page.dart';
 import 'providers/cart_provider.dart';
+import 'providers/comment_provider.dart';
 import 'providers/home_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/order_provider.dart';
@@ -25,6 +26,7 @@ class HLAppleAiApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider(create: (_) => HomeProvider()),
+        ChangeNotifierProvider(create: (_) => CommentProvider()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
         ChangeNotifierProvider(create: (_) => CommunityProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
