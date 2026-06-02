@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../data/models/product.dart';
+import 'file_section.dart';
 
 class PostPreviewPage extends StatelessWidget {
   final String content;
-  final String? deltaJson;
   final List<String> images;
+  final List<FileAttachment> files;
   final String? category;
   final Product? product;
   final List<String> topics;
@@ -15,8 +16,8 @@ class PostPreviewPage extends StatelessWidget {
   const PostPreviewPage({
     super.key,
     required this.content,
-    this.deltaJson,
     required this.images,
+    this.files = const [],
     this.category,
     this.product,
     this.topics = const [],
@@ -36,6 +37,57 @@ class PostPreviewPage extends StatelessWidget {
       orElse: () => {'name': '分享'},
     );
     return cat['name'] ?? '分享';
+  }
+
+  IconData _fileIcon(AttachmentType type) {
+    switch (type) {
+      case AttachmentType.word:
+        return Icons.description;
+      case AttachmentType.pdf:
+        return Icons.picture_as_pdf;
+      case AttachmentType.excel:
+        return Icons.table_chart;
+      case AttachmentType.video:
+        return Icons.videocam;
+      case AttachmentType.ppt:
+        return Icons.slideshow;
+      case AttachmentType.other:
+        return Icons.insert_drive_file;
+    }
+  }
+
+  Color _fileColor(AttachmentType type) {
+    switch (type) {
+      case AttachmentType.word:
+        return const Color(0xFF2B579A);
+      case AttachmentType.pdf:
+        return const Color(0xFFE74C3C);
+      case AttachmentType.excel:
+        return const Color(0xFF27AE60);
+      case AttachmentType.video:
+        return const Color(0xFFE17055);
+      case AttachmentType.ppt:
+        return const Color(0xFFD24726);
+      case AttachmentType.other:
+        return AppColors.textSecondary;
+    }
+  }
+
+  String _fileTypeLabel(AttachmentType type) {
+    switch (type) {
+      case AttachmentType.word:
+        return 'Word 文档';
+      case AttachmentType.pdf:
+        return 'PDF 文档';
+      case AttachmentType.excel:
+        return 'Excel 表格';
+      case AttachmentType.video:
+        return '视频文件';
+      case AttachmentType.ppt:
+        return 'PPT 演示';
+      case AttachmentType.other:
+        return '其他文件';
+    }
   }
 
   @override
@@ -66,9 +118,9 @@ class PostPreviewPage extends StatelessWidget {
             _buildHeader(),
             _buildContent(),
             if (images.isNotEmpty) _buildImageGrid(),
+            if (files.isNotEmpty) _buildFilesSection(),
             if (product != null) _buildProductCard(),
             _buildTopicsAndLocation(),
-            _buildDeltaJsonSection(),
           ],
         ),
       ),
@@ -180,6 +232,78 @@ class PostPreviewPage extends StatelessWidget {
     );
   }
 
+  Widget _buildFilesSection() {
+    return Container(
+      color: AppColors.white,
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '附件',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...files.map(_buildFileItem),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFileItem(FileAttachment file) {
+    final color = _fileColor(file.type);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(_fileIcon(file.type), color: color, size: 20),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  file.name,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _fileTypeLabel(file.type),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildProductCard() {
     return Container(
       margin: const EdgeInsets.only(top: 8),
@@ -279,43 +403,6 @@ class PostPreviewPage extends StatelessWidget {
                 ),
               ],
             ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDeltaJsonSection() {
-    if (deltaJson == null || deltaJson!.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Delta JSON 数据',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          SelectableText(
-            deltaJson!,
-            style: const TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 10,
-              color: AppColors.textSecondary,
-            ),
-          ),
         ],
       ),
     );

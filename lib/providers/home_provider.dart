@@ -209,6 +209,7 @@ class CommunityProvider extends ChangeNotifier {
         createTime: post.createTime,
         isLiked: isLiked,
         isCollected: post.isCollected,
+        files: post.files,
       );
       notifyListeners();
     }
@@ -229,6 +230,7 @@ class CommunityProvider extends ChangeNotifier {
         createTime: post.createTime,
         isLiked: post.isLiked,
         isCollected: !post.isCollected,
+        files: post.files,
       );
       notifyListeners();
     }

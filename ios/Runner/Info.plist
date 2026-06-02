@@ -45,6 +45,8 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>We need camera access to scan QR codes and barcodes</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>We use photos to save your favorite moments</string>
 	<key>NSPhotoLibraryUsageDescription</key>

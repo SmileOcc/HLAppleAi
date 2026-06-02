@@ -8,6 +8,8 @@ class MockDataService {
   static const int totalShopProducts = 25;
   static const int shopPageSize = 10;
 
+  static final List<Map<String, dynamic>> userCreatedPosts = [];
+
   static Future<List<Product>> getShopProducts({
     int page = 1,
     int pageSize = 10,
@@ -598,28 +600,73 @@ class MockDataService {
       '质量很好，材质环保，用起来很放心。会推荐给朋友。',
     ];
 
-    return List.generate(15, (index) {
-      final imageCount = (index % 3) + 1;
-      return Post(
-        id: index + 1,
-        title: titles[index % titles.length],
-        content: contents[index % contents.length],
-        images: List.generate(
-          imageCount,
-          (i) => 'https://picsum.photos/400/300?random=${index * 10 + i}',
-        ),
-        author: User(
+    final mockFiles = [
+      {
+        'name': '产品介绍.pdf',
+        'path':
+            'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+        'type': 1,
+        'sizeBytes': 204800,
+      },
+      {
+        'name': '技术文档.docx',
+        'path': 'https://calibre-ebook.com/downloads/demos/demo.docx',
+        'type': 0,
+        'sizeBytes': 51200,
+      },
+      {
+        'name': '数据报表.xlsx',
+        'path': 'https://go.microsoft.com/fwlink/?LinkID=2129746',
+        'type': 2,
+        'sizeBytes': 102400,
+      },
+      {'name': '演示视频.mp4', 'path': '', 'type': 3, 'sizeBytes': 52428800},
+      {
+        'name': '使用手册.pdf',
+        'path':
+            'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+        'type': 1,
+        'sizeBytes': 307200,
+      },
+      {
+        'name': '设计稿.pptx',
+        'path': 'https://calibre-ebook.com/downloads/demos/demo.docx',
+        'type': 4,
+        'sizeBytes': 1048576,
+      },
+    ];
+
+    return [
+      ...userCreatedPosts.map((data) => Post.fromJson(data)),
+      ...List.generate(15, (index) {
+        final imageCount = (index % 3) + 1;
+        final fileCount = index % 3;
+        final files = List.generate(fileCount, (i) {
+          final fi = (index * 3 + i) % mockFiles.length;
+          return mockFiles[fi];
+        });
+        return Post(
           id: index + 1,
-          name: userNames[index % userNames.length],
-          avatar: 'https://picsum.photos/100/100?random=${index + 50}',
-        ),
-        likes: 100 + index * 30,
-        comments: 10 + index * 5,
-        createTime: DateTime.now().subtract(Duration(hours: index * 2)),
-        isLiked: index % 3 == 0,
-        isCollected: index % 4 == 0,
-      );
-    });
+          title: titles[index % titles.length],
+          content: contents[index % contents.length],
+          images: List.generate(
+            imageCount,
+            (i) => 'https://picsum.photos/400/300?random=${index * 10 + i}',
+          ),
+          author: User(
+            id: index + 1,
+            name: userNames[index % userNames.length],
+            avatar: 'https://picsum.photos/100/100?random=${index + 50}',
+          ),
+          likes: 100 + index * 30,
+          comments: 10 + index * 5,
+          createTime: DateTime.now().subtract(Duration(hours: index * 2)),
+          isLiked: index % 3 == 0,
+          isCollected: index % 4 == 0,
+          files: files,
+        );
+      }),
+    ];
   }
 
   static final List<Comment> _allComments = List.generate(45, (index) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/l10n/app_localizations.dart';
+import '../../data/services/notification_preferences.dart';
 import '../../providers/locale_provider.dart';
 import 'privacy_policy_page.dart';
 import 'user_agreement_page.dart';
@@ -16,9 +17,27 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool _isDarkMode = false;
-  bool _isNotificationEnabled = true;
+  bool _isActivityNotification = false;
+  bool _isMessageNotification = true;
+  bool _isUpdateNotification = true;
   bool _isLocationEnabled = true;
   double _cacheSize = 23.5;
+  bool _notificationExpanded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationPrefs();
+  }
+
+  Future<void> _loadNotificationPrefs() async {
+    final prefs = await NotificationPreferences.getInstance();
+    setState(() {
+      _isActivityNotification = prefs.activityEnabled;
+      _isMessageNotification = prefs.messageEnabled;
+      _isUpdateNotification = prefs.updateEnabled;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,17 +62,7 @@ class _SettingsPageState extends State<SettingsPage> {
               });
             },
           ),
-          _buildSwitchItem(
-            icon: Icons.notifications_outlined,
-            title: l10n.notifications,
-            subtitle: '',
-            value: _isNotificationEnabled,
-            onChanged: (value) {
-              setState(() {
-                _isNotificationEnabled = value;
-              });
-            },
-          ),
+          _buildNotificationGroup(l10n),
           _buildSwitchItem(
             icon: Icons.location_on_outlined,
             title: l10n.locationServices,
@@ -131,6 +140,115 @@ class _SettingsPageState extends State<SettingsPage> {
           fontSize: 14,
           fontWeight: FontWeight.bold,
           color: AppColors.textSecondary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationGroup(AppLocalizations l10n) {
+    return Column(
+      children: [
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+          ),
+          child: ListTile(
+            leading: const Icon(
+              Icons.notifications_outlined,
+              color: AppColors.primary,
+            ),
+            title: const Text(
+              '通知',
+              style: TextStyle(fontSize: 16, color: AppColors.textPrimary),
+            ),
+            trailing: Icon(
+              _notificationExpanded
+                  ? Icons.keyboard_arrow_up
+                  : Icons.keyboard_arrow_down,
+              color: AppColors.textSecondary,
+            ),
+            onTap: () {
+              setState(() {
+                _notificationExpanded = !_notificationExpanded;
+              });
+            },
+          ),
+        ),
+        if (_notificationExpanded) ...[
+          _buildSubSwitchItem(
+            title: '活动通知',
+            subtitle: '接收活动广告推送',
+            value: _isActivityNotification,
+            onChanged: (value) {
+              setState(() {
+                _isActivityNotification = value;
+              });
+              NotificationPreferences.getInstance().then(
+                (p) => p.setActivityEnabled(value),
+              );
+            },
+          ),
+          _buildSubSwitchItem(
+            title: '消息通知',
+            subtitle: '接收用户消息通知',
+            value: _isMessageNotification,
+            onChanged: (value) {
+              setState(() {
+                _isMessageNotification = value;
+              });
+              NotificationPreferences.getInstance().then(
+                (p) => p.setMessageEnabled(value),
+              );
+            },
+          ),
+          _buildSubSwitchItem(
+            title: '更新通知',
+            subtitle: '接收版本更新通知',
+            value: _isUpdateNotification,
+            onChanged: (value) {
+              setState(() {
+                _isUpdateNotification = value;
+              });
+              NotificationPreferences.getInstance().then(
+                (p) => p.setUpdateEnabled(value),
+              );
+            },
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSubSwitchItem({
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+      ),
+      child: ListTile(
+        dense: true,
+        contentPadding: const EdgeInsets.only(left: 48, right: 8),
+        title: Text(
+          title,
+          style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
+        trailing: Switch(
+          value: value,
+          onChanged: onChanged,
+          activeColor: AppColors.primary,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
       ),
     );

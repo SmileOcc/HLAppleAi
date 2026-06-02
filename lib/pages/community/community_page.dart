@@ -106,14 +106,17 @@ class _CommunityPageState extends State<CommunityPage>
     );
   }
 
-  void _showCreatePostSheet() {
-    Navigator.push(
+  void _showCreatePostSheet() async {
+    final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (_) => const CreatePostPage(),
         fullscreenDialog: true,
       ),
     );
+    if (result == true && mounted) {
+      context.read<CommunityProvider>().refresh();
+    }
   }
 
   Widget _buildPostList() {

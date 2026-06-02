@@ -4,9 +4,11 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/utils/toast_util.dart';
+import '../../data/models/post.dart';
 import '../../data/models/product.dart';
 import '../../data/services/mock_product_service.dart';
 import '../../data/services/mock_rich_text_service.dart';
+import '../../data/services/mock_data_service.dart';
 import '../../widgets/community/community.dart';
 import '../../widgets/custom_image_picker.dart';
 import '../../widgets/rich_text_editor.dart';
@@ -23,6 +25,7 @@ class CreatePostPage extends StatefulWidget {
 class _CreatePostPageState extends State<CreatePostPage> {
   late QuillController _quillController;
   final List<String> _selectedImages = [];
+  final List<FileAttachment> _selectedFiles = [];
   String? _selectedCategory;
   Product? _selectedProduct;
   final List<Product> _products = [];
@@ -81,6 +84,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
               onCategoryChanged: (category) {
                 setState(() => _selectedCategory = category);
               },
+              required: true,
             ),
             ProductSection(
               selectedProduct: _selectedProduct,
@@ -100,6 +104,16 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 });
               },
               onAddImage: _showImageSourceDialog,
+            ),
+            FileSection(
+              files: _selectedFiles,
+              onFilesChanged: (files) {
+                setState(
+                  () => _selectedFiles
+                    ..clear()
+                    ..addAll(files),
+                );
+              },
             ),
             TopicSection(
               selectedTopics: _selectedTopics,
@@ -203,12 +217,20 @@ class _CreatePostPageState extends State<CreatePostPage> {
         children: [
           Row(
             children: [
-              const Text(
-                '分享内容',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+              RichText(
+                text: const TextSpan(
+                  text: '分享内容',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: ' *',
+                      style: TextStyle(color: Colors.red, fontSize: 15),
+                    ),
+                  ],
                 ),
               ),
               const Spacer(),
@@ -336,8 +358,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
       MaterialPageRoute(
         builder: (context) => PostPreviewPage(
           content: _getPlainText(),
-          deltaJson: _getDeltaJson(),
           images: List.from(_selectedImages),
+          files: List.from(_selectedFiles),
           category: _selectedCategory,
           product: _selectedProduct,
           topics: List.from(_selectedTopics),
@@ -412,15 +434,36 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
     try {
       final service = MockRichTextService();
-      await service.createPost(
+      final richPost = await service.createPost(
         content: _getPlainText(),
         deltaJson: _getDeltaJson(),
         images: _selectedImages,
+        files: _selectedFiles.map((f) => f.toJson()).toList(),
         category: _selectedCategory,
         topics: _selectedTopics,
         location: _selectedLocation,
         linkedProductId: _selectedProduct?.id.toString(),
       );
+
+      final content = _getPlainText();
+      final title = content.split('\n').first.trim();
+      MockDataService.userCreatedPosts.insert(0, {
+        'id': DateTime.now().millisecondsSinceEpoch,
+        'title': title.length > 30 ? '${title.substring(0, 30)}...' : title,
+        'content': content,
+        'images': _selectedImages,
+        'files': _selectedFiles.map((f) => f.toJson()).toList(),
+        'author': {
+          'id': 0,
+          'name': '我',
+          'avatar': 'https://picsum.photos/100/100?random=99',
+        },
+        'likes': 0,
+        'comments': 0,
+        'createTime': richPost.createdAt.toIso8601String(),
+        'isLiked': false,
+        'isCollected': false,
+      });
 
       if (mounted) {
         ToastUtil.show(context, '发布成功');

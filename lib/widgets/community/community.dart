@@ -1,4 +1,5 @@
 export 'category_section.dart';
+export 'file_section.dart';
 export 'image_preview_page.dart';
 export 'image_section.dart';
 export 'location_section.dart';

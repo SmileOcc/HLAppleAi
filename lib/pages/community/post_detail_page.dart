@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/l10n/app_localizations.dart';
 import '../../core/utils/toast_util.dart';
 import '../../data/models/post.dart';
+import '../../providers/home_provider.dart';
+import '../../widgets/community/file_section.dart';
+import '../../data/services/attachment_store.dart';
+import 'attachment_detail_page.dart';
 
 class PostDetailPage extends StatefulWidget {
   final Post? post;
@@ -44,6 +49,21 @@ class _PostDetailPageState extends State<PostDetailPage> {
       likes: 520,
       comments: 88,
       createTime: DateTime.now().subtract(const Duration(days: 1)),
+      files: [
+        {
+          'name': '产品介绍.pdf',
+          'path':
+              'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+          'type': 1,
+          'sizeBytes': 204800,
+        },
+        {
+          'name': '技术文档.docx',
+          'path': 'https://calibre-ebook.com/downloads/demos/demo.docx',
+          'type': 0,
+          'sizeBytes': 51200,
+        },
+      ],
     );
   }
 
@@ -108,8 +128,19 @@ class _PostDetailPageState extends State<PostDetailPage> {
     ]);
   }
 
+  void _syncFromProvider() {
+    if (widget.post == null) return;
+    final provider = context.read<CommunityProvider>();
+    final idx = provider.posts.indexWhere((p) => p.id == _post.id);
+    if (idx != -1) {
+      _post = provider.posts[idx] as Post;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    context.watch<CommunityProvider>();
+    _syncFromProvider();
     final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
@@ -141,6 +172,11 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   if (_post.images.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     _buildImages(),
+                  ],
+                  if (_post.files.isNotEmpty &&
+                      _post.files.any((f) => f != null)) ...[
+                    const SizedBox(height: 20),
+                    _buildAttachmentsSection(),
                   ],
                   const SizedBox(height: 20),
                   _buildActionBar(l10n),
@@ -260,6 +296,123 @@ class _PostDetailPageState extends State<PostDetailPage> {
     );
   }
 
+  Widget _buildAttachmentsSection() {
+    final files = _post.files.map((f) => FileAttachment.fromJson(f)).toList();
+    return Container(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '附件',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...files.map((file) => _buildAttachmentItem(file)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAttachmentItem(FileAttachment file) {
+    IconData icon;
+    Color color;
+    String label;
+    switch (file.type) {
+      case AttachmentType.word:
+        icon = Icons.description;
+        color = const Color(0xFF2B579A);
+        label = 'Word 文档';
+      case AttachmentType.pdf:
+        icon = Icons.picture_as_pdf;
+        color = const Color(0xFFE74C3C);
+        label = 'PDF 文档';
+      case AttachmentType.excel:
+        icon = Icons.table_chart;
+        color = const Color(0xFF27AE60);
+        label = 'Excel 表格';
+      case AttachmentType.video:
+        icon = Icons.videocam;
+        color = const Color(0xFFE17055);
+        label = '视频文件';
+      case AttachmentType.ppt:
+        icon = Icons.slideshow;
+        color = const Color(0xFFD24726);
+        label = 'PPT 演示';
+      case AttachmentType.other:
+        icon = Icons.insert_drive_file;
+        color = AppColors.textSecondary;
+        label = '其他文件';
+    }
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AttachmentDetailPage(attachment: file),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      file.name,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right,
+                color: AppColors.textSecondary,
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildActionBar(AppLocalizations l10n) {
     return Row(
       children: [
@@ -269,20 +422,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
           label: '点赞',
           isActive: _post.isLiked,
           onTap: () {
-            setState(() {
-              _post = Post(
-                id: _post.id,
-                title: _post.title,
-                content: _post.content,
-                images: _post.images,
-                author: _post.author,
-                likes: _post.isLiked ? _post.likes - 1 : _post.likes + 1,
-                comments: _post.comments,
-                createTime: _post.createTime,
-                isLiked: !_post.isLiked,
-                isCollected: _post.isCollected,
-              );
-            });
+            context.read<CommunityProvider>().toggleLike(_post.id);
           },
         ),
         const SizedBox(width: 32),
@@ -299,20 +439,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
           label: '收藏',
           isActive: _post.isCollected,
           onTap: () {
-            setState(() {
-              _post = Post(
-                id: _post.id,
-                title: _post.title,
-                content: _post.content,
-                images: _post.images,
-                author: _post.author,
-                likes: _post.likes,
-                comments: _post.comments,
-                createTime: _post.createTime,
-                isLiked: _post.isLiked,
-                isCollected: !_post.isCollected,
-              );
-            });
+            context.read<CommunityProvider>().toggleCollect(_post.id);
           },
         ),
         const SizedBox(width: 32),

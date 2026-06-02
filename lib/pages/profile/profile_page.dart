@@ -8,6 +8,8 @@ import '../../providers/locale_provider.dart';
 import 'order_list_page.dart';
 import 'after_sales_list_page.dart';
 import 'favorite_page.dart';
+import 'post_favorites_page.dart';
+import 'my_attachments_page.dart';
 import 'address_page.dart';
 import 'coupon_page.dart';
 import 'history_page.dart';
@@ -372,6 +374,16 @@ class _ProfilePageState extends State<ProfilePage> {
         'icon': Icons.favorite_outline,
         'title': l10n.myFavorites,
         'page': const FavoritePage(),
+      },
+      {
+        'icon': Icons.bookmark_outline,
+        'title': '帖子收藏',
+        'page': const PostFavoritesPage(),
+      },
+      {
+        'icon': Icons.attach_file,
+        'title': '我的附件',
+        'page': const MyAttachmentsPage(),
       },
       {
         'icon': Icons.location_on_outlined,

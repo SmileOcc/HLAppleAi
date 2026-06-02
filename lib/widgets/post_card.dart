@@ -145,14 +145,14 @@ class PostCard extends StatelessWidget {
     return Row(
       children: [
         _buildActionButton(
-          icon: post.isLiked ? Icons.favorite : Icons.favorite_border,
+          icon: post.isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
           count: post.likes,
           isActive: post.isLiked,
           onTap: onLike,
         ),
         const SizedBox(width: AppConstants.paddingLarge),
         _buildActionButton(
-          icon: Icons.chat_bubble_outline,
+          icon: Icons.comment_outlined,
           count: post.comments,
           onTap: onComment,
         ),

@@ -10,6 +10,7 @@ class RichTextPost {
   final List<String> topics;
   final String? location;
   final String? linkedProductId;
+  final List<Map<String, dynamic>> files;
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isDraft;
@@ -23,6 +24,7 @@ class RichTextPost {
     this.topics = const [],
     this.location,
     this.linkedProductId,
+    this.files = const [],
     required this.createdAt,
     required this.updatedAt,
     this.isDraft = false,
@@ -38,6 +40,7 @@ class RichTextPost {
       topics: List<String>.from(json['topics'] ?? []),
       location: json['location'] as String?,
       linkedProductId: json['linkedProductId'] as String?,
+      files: List<Map<String, dynamic>>.from(json['files'] ?? []),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       isDraft: json['isDraft'] as bool? ?? false,
@@ -54,6 +57,7 @@ class RichTextPost {
       'topics': topics,
       'location': location,
       'linkedProductId': linkedProductId,
+      'files': files,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'isDraft': isDraft,
@@ -69,6 +73,7 @@ class RichTextPost {
     List<String>? topics,
     String? location,
     String? linkedProductId,
+    List<Map<String, dynamic>>? files,
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isDraft,
@@ -82,6 +87,7 @@ class RichTextPost {
       topics: topics ?? this.topics,
       location: location ?? this.location,
       linkedProductId: linkedProductId ?? this.linkedProductId,
+      files: files ?? this.files,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isDraft: isDraft ?? this.isDraft,
@@ -220,6 +226,7 @@ class MockRichTextService {
     required String content,
     required String deltaJson,
     List<String> images = const [],
+    List<Map<String, dynamic>> files = const [],
     String? category,
     List<String> topics = const [],
     String? location,
@@ -235,6 +242,7 @@ class MockRichTextService {
       content: content,
       deltaJson: deltaJson,
       images: images,
+      files: files,
       category: category,
       topics: topics,
       location: location,

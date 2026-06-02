@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -5,10 +6,15 @@ import 'package:provider/provider.dart';
 import 'core/constants/app_constants.dart';
 import 'core/l10n/app_localizations.dart';
 import 'core/theme/app_theme.dart';
+import 'data/services/notification_preferences.dart';
+import 'feature_debugger/debug_settings.dart';
+import 'feature_debugger/debug_page.dart';
 import 'pages/cart/cart_page.dart';
 import 'pages/category/category_page.dart';
 import 'pages/community/community_page.dart';
 import 'pages/home/home_page.dart';
+import 'widgets/activity_ad_dialog.dart';
+import 'widgets/app_upgrade_dialog.dart';
 import 'widgets/settings_drawer.dart';
 import 'pages/profile/profile_page.dart';
 import 'providers/cart_provider.dart';
@@ -65,6 +71,8 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   int _currentIndex = 0;
+  bool _upgradeShown = false;
+  final List<int> _tapTimestamps = [];
   final List<Widget> _pages = const [
     HomePage(),
     CategoryPage(),
@@ -72,6 +80,114 @@ class _MainPageState extends State<MainPage> {
     CartPage(),
     ProfilePage(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future.wait([_checkActivityAd(), _checkAppUpgrade()]);
+    });
+  }
+
+  bool _isVersionGreater(String debugVersion, String currentVersion) {
+    final cleanDebug = debugVersion.replaceFirst(
+      RegExp(r'^v', caseSensitive: false),
+      '',
+    );
+    final cleanCurrent = currentVersion.replaceFirst(
+      RegExp(r'^v', caseSensitive: false),
+      '',
+    );
+    final debugParts = cleanDebug.split('.');
+    final currentParts = cleanCurrent.split('.');
+    final maxLen = debugParts.length > currentParts.length
+        ? debugParts.length
+        : currentParts.length;
+    for (var i = 0; i < maxLen; i++) {
+      final d = i < debugParts.length ? int.tryParse(debugParts[i]) ?? 0 : 0;
+      final c = i < currentParts.length
+          ? int.tryParse(currentParts[i]) ?? 0
+          : 0;
+      if (d > c) return true;
+      if (d < c) return false;
+    }
+    return false;
+  }
+
+  Future<void> _checkAppUpgrade() async {
+    if (kReleaseMode) return;
+    final debug = await DebugSettings.getInstance();
+    if (!debug.upgradeEnabled) return;
+    if (!_isVersionGreater(debug.upgradeVersion, AppConstants.appVersion)) {
+      return;
+    }
+    if (!mounted) return;
+    _upgradeShown = true;
+    AppUpgradeDialog.show(
+      context,
+      config: AppUpgradeConfig(
+        title: debug.upgradeTitle,
+        version: debug.upgradeVersion,
+        description: debug.upgradeDescription,
+        downloadUrl: debug.upgradeDownloadUrl,
+        forceUpdate: debug.upgradeForceUpdate,
+      ),
+      onUpdate: () {},
+      onCancel: () {},
+    );
+  }
+
+  Future<void> _checkActivityAd() async {
+    if (!kReleaseMode) {
+      final debug = await DebugSettings.getInstance();
+      if (debug.adStartupEnabled) {
+        if (debug.adSource == AdSource.config) {
+          await Future.delayed(Duration(seconds: debug.adDelaySeconds));
+          if (!mounted || _upgradeShown) return;
+          ActivityAdDialog.show(
+            context,
+            config: ActivityAdConfig(
+              title: debug.adTitle.isNotEmpty ? debug.adTitle : '限时特惠活动',
+              description: debug.adContent,
+              imageUrl: debug.adImageUrl,
+              actionText: '立即查看',
+            ),
+          );
+        } else {
+          await Future.delayed(const Duration(seconds: 2));
+          if (!mounted || _upgradeShown) return;
+          ActivityAdDialog.show(
+            context,
+            config: const ActivityAdConfig(
+              title: '限时特惠活动',
+              description:
+                  '全场商品低至5折！精选好货限时抢购，赶紧来选购吧！\n\n'
+                  '活动时间：即日起至本月底\n优惠券每日限量发放，先到先得！',
+              imageUrl: 'https://picsum.photos/600/300?random=999',
+              actionText: '立即查看',
+            ),
+          );
+        }
+        return;
+      }
+    }
+    final prefs = await NotificationPreferences.getInstance();
+    if (!prefs.activityEnabled || !mounted) return;
+    if (_upgradeShown) return;
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted || _upgradeShown) return;
+    ActivityAdDialog.show(
+      context,
+      config: const ActivityAdConfig(
+        title: '限时特惠活动',
+        description:
+            '全场商品低至5折！精选好货限时抢购，赶紧来选购吧！\n\n'
+            '活动时间：即日起至本月底\n优惠券每日限量发放，先到先得！',
+        imageUrl: 'https://picsum.photos/600/300?random=999',
+        actionText: '立即查看',
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,6 +199,19 @@ class _MainPageState extends State<MainPage> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
+          if (!kReleaseMode) {
+            final now = DateTime.now().millisecondsSinceEpoch;
+            _tapTimestamps.add(now);
+            _tapTimestamps.removeWhere((t) => now - t > 3000);
+            if (_tapTimestamps.length >= 5) {
+              _tapTimestamps.clear();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const DebugPage()),
+              );
+              return;
+            }
+          }
           setState(() {
             _currentIndex = index;
           });

@@ -164,7 +164,10 @@ class _CouponPageState extends State<CouponPage>
         children: [
           Container(
             width: 100,
-            padding: const EdgeInsets.all(AppConstants.paddingMedium),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppConstants.paddingSmall,
+              vertical: AppConstants.paddingMedium,
+            ),
             decoration: BoxDecoration(
               color: isAvailable
                   ? AppColors.primary
@@ -178,32 +181,36 @@ class _CouponPageState extends State<CouponPage>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '¥',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: isAvailable
-                            ? AppColors.white
-                            : AppColors.textSecondary,
-                        fontWeight: FontWeight.bold,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '¥',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isAvailable
+                              ? AppColors.white
+                              : AppColors.textSecondary,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    Text(
-                      coupon['amount'].toString(),
-                      style: TextStyle(
-                        fontSize: 32,
-                        color: isAvailable
-                            ? AppColors.white
-                            : AppColors.textSecondary,
-                        fontWeight: FontWeight.bold,
+                      Text(
+                        coupon['amount'].toString(),
+                        style: TextStyle(
+                          fontSize: 32,
+                          color: isAvailable
+                              ? AppColors.white
+                              : AppColors.textSecondary,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                const SizedBox(height: 4),
                 Text(
                   '满${coupon['minAmount']}可用',
                   style: TextStyle(

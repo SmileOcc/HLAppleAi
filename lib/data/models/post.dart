@@ -36,6 +36,7 @@ class Post {
   final DateTime createTime;
   final bool isLiked;
   final bool isCollected;
+  final List<Map<String, dynamic>> files;
 
   Post({
     required this.id,
@@ -48,6 +49,7 @@ class Post {
     required this.createTime,
     this.isLiked = false,
     this.isCollected = false,
+    this.files = const <Map<String, dynamic>>[],
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
@@ -64,6 +66,9 @@ class Post {
           : DateTime.now(),
       isLiked: json['isLiked'] ?? false,
       isCollected: json['isCollected'] ?? false,
+      files: json['files'] != null
+          ? List<Map<String, dynamic>>.from(json['files'])
+          : <Map<String, dynamic>>[],
     );
   }
 
@@ -79,6 +84,7 @@ class Post {
       'createTime': createTime.toIso8601String(),
       'isLiked': isLiked,
       'isCollected': isCollected,
+      'files': files,
     };
   }
 }

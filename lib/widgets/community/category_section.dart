@@ -4,11 +4,13 @@ import '../../../core/constants/app_constants.dart';
 class CategorySection extends StatelessWidget {
   final String? selectedCategory;
   final ValueChanged<String?> onCategoryChanged;
+  final bool required;
 
   const CategorySection({
     super.key,
     this.selectedCategory,
     required this.onCategoryChanged,
+    this.required = false,
   });
 
   static const List<Map<String, dynamic>> categories = [
@@ -27,12 +29,22 @@ class CategorySection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '选择话题分类',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+          RichText(
+            text: TextSpan(
+              text: '选择话题分类',
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+              children: required
+                  ? [
+                      const TextSpan(
+                        text: ' *',
+                        style: TextStyle(color: Colors.red, fontSize: 15),
+                      ),
+                    ]
+                  : null,
             ),
           ),
           const SizedBox(height: 12),
