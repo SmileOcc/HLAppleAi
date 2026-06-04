@@ -4,6 +4,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/l10n/app_localizations.dart';
 import '../../data/services/notification_preferences.dart';
 import '../../providers/locale_provider.dart';
+import '../../providers/profile_provider.dart';
 import 'privacy_policy_page.dart';
 import 'user_agreement_page.dart';
 import 'account_security_page.dart';
@@ -448,9 +449,11 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Text(l10n.cancel),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
               Navigator.pop(context);
+              await context.read<ProfileProvider>().logout();
+              if (!context.mounted) return;
               ScaffoldMessenger.of(
                 context,
               ).showSnackBar(SnackBar(content: Text(l10n.logout)));

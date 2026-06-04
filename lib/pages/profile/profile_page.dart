@@ -14,7 +14,9 @@ import 'address_page.dart';
 import 'coupon_page.dart';
 import 'history_page.dart';
 import 'settings_page.dart';
+import 'notification_settings_page.dart';
 import 'about_page.dart';
+import '../auth/login_register_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -64,9 +66,70 @@ class _ProfilePageState extends State<ProfilePage> {
     return SliverAppBar(
       expandedHeight: 200,
       pinned: true,
-      backgroundColor: AppColors.primary,
-      flexibleSpace: FlexibleSpaceBar(
-        background: Container(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 4),
+          child: IconButton(
+            icon: const Icon(Icons.message_outlined, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const NotificationSettingsPage(),
+                ),
+              );
+            },
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.settings_outlined, color: Colors.white),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SettingsPage()),
+            );
+          },
+        ),
+      ],
+      flexibleSpace: _buildFlexibleSpace(provider, l10n),
+    );
+  }
+
+  Widget _buildFlexibleSpace(ProfileProvider provider, AppLocalizations l10n) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final settings = context
+            .dependOnInheritedWidgetOfExactType<FlexibleSpaceBarSettings>();
+
+        double ratio = 1.0;
+        if (settings != null) {
+          final total = settings.maxExtent - settings.minExtent;
+          ratio = total > 0
+              ? ((settings.currentExtent - settings.minExtent) / total).clamp(
+                  0.0,
+                  1.0,
+                )
+              : 1.0;
+        }
+
+        final topInset = MediaQuery.of(context).padding.top;
+        final rowHeight = provider.isLoggedIn ? 80.0 : 60.0;
+        final originX = rowHeight / 2;
+
+        final collapsedCenterY = topInset + kToolbarHeight / 2;
+        final expandedCenterY = topInset + (200.0 - topInset) / 2;
+        final centerY =
+            collapsedCenterY + (expandedCenterY - collapsedCenterY) * ratio;
+        final top = centerY - rowHeight / 2;
+        final scale = 0.4 + ratio * 0.6;
+        final contentOpacity = ratio.clamp(0.0, 1.0);
+        final left = 16.0 + (24.0 - 16.0) * ratio;
+
+        final infoOpacity = ((contentOpacity - 0.3) / 0.7).clamp(0.0, 1.0);
+
+        return Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [AppColors.primary, AppColors.secondary],
@@ -74,100 +137,148 @@ class _ProfilePageState extends State<ProfilePage> {
               end: Alignment.bottomRight,
             ),
           ),
-          child: SafeArea(
-            child: Center(
-              child: provider.isLoggedIn
-                  ? _buildLoggedInHeader(provider, l10n)
-                  : _buildLoginHeader(l10n),
-            ),
+          child: Stack(
+            children: [
+              Positioned(
+                left: left,
+                top: top,
+                child: Transform(
+                  transform: Matrix4.identity()..scale(scale),
+                  origin: Offset(originX, rowHeight / 2),
+                  child: SizedBox(
+                    height: rowHeight,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        provider.isLoggedIn
+                            ? _buildAvatarWidget(provider, rowHeight / 2)
+                            : const CircleAvatar(
+                                radius: 30,
+                                backgroundColor: AppColors.white,
+                                child: Icon(
+                                  Icons.person,
+                                  size: 30,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                        const SizedBox(width: 16),
+                        provider.isLoggedIn
+                            ? _buildUserInfo(provider, l10n, infoOpacity)
+                            : _buildLoginButton(l10n),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildLoggedInHeader(ProfileProvider provider, AppLocalizations l10n) {
+  Widget _buildAvatarWidget(ProfileProvider provider, double radius) {
+    final userInfo = provider.userInfo;
+    return CircleAvatar(
+      radius: radius,
+      backgroundImage:
+          userInfo != null &&
+              userInfo['avatar'] != null &&
+              (userInfo['avatar'] as String).isNotEmpty
+          ? CachedNetworkImageProvider(userInfo['avatar'] as String)
+          : null,
+      child:
+          userInfo == null ||
+              userInfo['avatar'] == null ||
+              (userInfo['avatar'] as String).isEmpty
+          ? Icon(Icons.person, size: radius, color: AppColors.white)
+          : null,
+    );
+  }
+
+  Widget _buildUserInfo(
+    ProfileProvider provider,
+    AppLocalizations l10n,
+    double infoOpacity,
+  ) {
     final userInfo = provider.userInfo;
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CircleAvatar(
-          radius: 40,
-          backgroundImage: userInfo != null
-              ? CachedNetworkImageProvider(userInfo['avatar'] ?? '')
-              : const NetworkImage('https://picsum.photos/200/200'),
-          child: userInfo == null
-              ? const Icon(Icons.person, size: 40, color: AppColors.white)
-              : null,
-        ),
-        const SizedBox(height: 12),
         Text(
           userInfo?['name'] ?? l10n.user,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
             color: AppColors.white,
           ),
         ),
-        const SizedBox(height: 4),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                'Lv.${userInfo?['level'] ?? 1}',
-                style: const TextStyle(fontSize: 12, color: AppColors.white),
+        ClipRect(
+          child: Align(
+            alignment: Alignment.topCenter,
+            heightFactor: infoOpacity.clamp(0.0, 1.0),
+            child: Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Opacity(
+                opacity: infoOpacity.clamp(0.0, 1.0),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'Lv.${userInfo?['level'] ?? 1}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '积分: ${userInfo?['points'] ?? 0}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.white,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(width: 8),
-            Text(
-              '积分: ${userInfo?['points'] ?? 0}',
-              style: const TextStyle(fontSize: 12, color: AppColors.white),
-            ),
-          ],
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildLoginHeader(AppLocalizations l10n) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const CircleAvatar(
-          radius: 40,
-          backgroundColor: AppColors.white,
-          child: Icon(Icons.person, size: 40, color: AppColors.primary),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.white,
-                foregroundColor: AppColors.primary,
-              ),
-              child: Text(l10n.login),
-            ),
-            const SizedBox(width: 16),
-            ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.white.withValues(alpha: 0.3),
-                foregroundColor: AppColors.white,
-              ),
-              child: Text(l10n.register),
-            ),
-          ],
-        ),
-      ],
+  Widget _buildLoginButton(AppLocalizations l10n) {
+    return ElevatedButton.icon(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const LoginRegisterPage(fromOnboarding: false),
+          ),
+        );
+      },
+      icon: const Icon(Icons.login, size: 18),
+      label: Text('${l10n.login}/${l10n.register}'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.white,
+        foregroundColor: AppColors.primary,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
     );
   }
 
@@ -181,7 +292,7 @@ class _ProfilePageState extends State<ProfilePage> {
           borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
